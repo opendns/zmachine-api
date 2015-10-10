@@ -1,0 +1,59 @@
+{
+    "name": "zmachine-api",
+    "description": "Web service for creating and managing a multiple zmachine game instances",
+    "keywords": [
+        "zmachine",
+        "z-machine",
+        "zcode",
+        "api",
+        "games",
+        "if"
+    ],
+    "version": "0.1.0",
+    "homepage": "https://github.com/opendns/zmachine-api",
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/opendns/zmachine-api.git"
+    },
+    "bugs": "https://github.com/opendns/zmachine-api/issues",
+    "licenses": [
+        {
+            "type": "BSD",
+            "url": "https://github.com/opendns/zmachine-api/blob/master/LICENSE"
+        }
+    ],
+    "author": "OpenDNS",
+    "maintainers": [
+        {
+            "name": "Doug Tabacco",
+            "email": "doug@opendns.com",
+            "web": "https://github.com/tabacco"
+        },
+        {
+            "name": "Justin Swift",
+            "email": "jswift@opendns.com",
+            "web": "https://github.com/jsswift"
+        },
+        {
+            "name": "Josh Eveleth",
+            "email": "jeveleth@opendns.com",
+            "web": "https://github.com/jeveleth"
+        },
+        {
+            "name": "Geoff Townsend",
+            "email": "geoff@opendns.com",
+            "web": "https://github.com/gttownsend"
+        }
+    ],
+    "bin": {},
+    "engines": {
+        "node": ">= 0.8.0"
+    },
+    "dependencies": {
+        "aws-sdk": "~2.1",
+        "body-parser": "~1.13",
+        "express": "~4.13",
+        "node-env-file": "~0.1"
+    },
+    "devDependencies": {}
+}

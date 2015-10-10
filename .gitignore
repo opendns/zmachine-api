@@ -1,0 +1,4 @@
+.env
+frotz
+node_modules
+zcode/*
