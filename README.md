@@ -37,7 +37,7 @@ AWS credentials to use S3 saves.
 Bringing up a server
 --------------------
 ```bash
-nodejs src/server.js
+node src/server.js
 ```
 
 There is a Dockerfile here
