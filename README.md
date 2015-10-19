@@ -8,8 +8,8 @@ You are standing in a repository. There is a README here.
 Overview
 --------
 This project aims to provide a simple web service that can bring up and run
-games in a z-machine. It was originally written to be interacted with by a hubot
-script, but could presumably be used by anything you like, which is the fun of
+games in a z-machine. It was originally written to be interacted with by a [hubot
+script](https://github.com/opendns/hubot-zmachine), but could presumably be used by anything you like, which is the fun of
 APIs.
 
 This was thrown together by a few developers, and could almost certainly be
