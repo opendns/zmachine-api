@@ -156,8 +156,7 @@ Response:
 
 - **pid** is the process id of the zmachine instance that you sent it to. Will be
  the same as the pid in the URL you posted to.
-- **data** is the response the game returned when it was saved. Don't send this
- to the player, as they don't know we're saving and restoring repeatedly.
+- **data** is the response the game returned when it was saved.
 
 
 #### POST /games/:pid/restore
@@ -183,8 +182,7 @@ Response:
 
 - **pid** is the process id of the zmachine instance that you sent it to. Will be
  the same as the pid in the URL you posted to.
-- **data** is the response the game returned when it was restored. Don't send this
- to the player, as they don't know we're saving and restoring repeatedly.
+- **data** is the response the game returned when it was restored.
 
 Tutorial
 --------
@@ -256,6 +254,11 @@ to them, so we don't need to use something unique for the name.
   {"file": "save"}
   ```
 
+  The response will contain a data element with whatever the game responds with
+  when you save. Normally, a player would see this, but since they didn't ask for
+  the save, telling them you just saved after every game action would be pretty
+  confusing.
+
 4. Quit the zmachine process with a `DELETE /games/12345`
 
 5. When you get a new command, it's time to restore the game. `POST /games`
@@ -278,7 +281,9 @@ to them, so we don't need to use something unique for the name.
   ```
 
 6. Because we're restoring the game automatically based on the label you provided,
-  **don't** send the `data` element back to the player.
+  **don't** send the `data` element back to the player.  They don't know we're
+  saving and restoring repeatedly, game save and restore messages would be
+  confusing to them.
 
 7. Using `POST /game/67890/restore` restore the game in the background to the
   new zmachine process, using the same file name as was used to save it.
