@@ -246,8 +246,8 @@ to them, so we don't need to use something unique for the name.
 
 4. Quit the zmachine process with a `DELETE /games/12345`
 
-5. When it's time to restore the game, `POST /games` using the same session ID
-`label` and `game` as you used in the first step:
+5. When you get a new command, it's time to restore the game. `POST /games`
+  using the same session ID `label` and `game` as you used in the first step:
 
   ```json
   {
@@ -276,6 +276,8 @@ to them, so we don't need to use something unique for the name.
     "file": "somefile",
    }
    ```
+
+8. Start over at step 2, sending the command you received in step 5.
 
 Bugs?
 -----
