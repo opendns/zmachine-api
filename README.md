@@ -193,6 +193,14 @@ This tutorial will walk through the steps to create a long-running game, one
 where you don't want the zmachine process to stay up and running. In this tutorial
 the game will be saved and restored between every single command.
 
+Dfrotz is extremely lightweight (Zork was originally run on a TRS-80, after all),
+and keeping the processes around generally won't hurt anything. But if your machine
+is very ephemeral (yay, cloud!), you might not be able to rely on the processes
+being alive if a player comes back to the game after months. Or you might just be
+a neat freak who can't stand to have all those processes lying around. Regardless,
+this tutorial will be helpful in understanding how the API interacts with the
+dfrotz process and how saved games work.
+
 A session ID provided by your application is used to keep track of the game for
 each player. The session ID can be anything you like, it just needs to be something
 you can keep track of for the entire length of the game.
