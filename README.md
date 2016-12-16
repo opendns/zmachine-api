@@ -34,7 +34,7 @@ make all
 ```
 
 Frotz 2.44 will be downloaded and built, and a symlink created so zmachine-api can
-find it. All node dependancies will be installed as well.
+find it. All node dependencies will be installed as well.
 
 Configuration
 -------------
