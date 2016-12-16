@@ -85,7 +85,7 @@ Request body:
 ```
 
 - **game** is the zmachine file (without the file extension) you wish to play
-- **label** is an arbitrary label
+- **label** is an arbitrary label, used as part of the filename when you save
 
 Response:
 ```json
@@ -95,8 +95,8 @@ Response:
 }
 ```
 
-- **pid** is the zmachine file (without the file extension) you wish to play
-- **label** is an arbitrary label, used as part of the filename when you save
+- **pid** is the process ID of the z-machine that was spawned by the creation of the game
+- **data** is the text that the game returned when it started.
 
 
 #### DELETE /games/:pid
