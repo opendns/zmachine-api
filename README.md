@@ -12,6 +12,10 @@ games in a z-machine. It was originally written to be interacted with by a [hubo
 script](https://github.com/opendns/hubot-zmachine), but could presumably be used by anything you like, which is the fun of
 APIs.
 
+The API uses the [dfrotz z-machine interpreter](https://github.com/DavidGriffith/frotz).
+Each game you start is run in a different dfrotz process, and APIs for managing
+these processes are included.
+
 This was thrown together by a few developers, and could almost certainly be
 better than it is. Please feel free to contribute improvements!
 
