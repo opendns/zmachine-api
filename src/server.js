@@ -34,24 +34,32 @@ app.post('/games', function(req, res) {
     var label = req.body.label;
     var game = req.body.game.replace(/[^a-z0-9]/, '');
     var zFile = __dirname + '/../zcode/' + game + '.z5';
-    var child = spawn(__dirname + "/../frotz/dfrotz", ["-S 0", zFile]);
+    var fs = require('fs');
+    fs.stat(zFile, function(err, stat) {
+        if(err == null) {
+          var child = spawn(__dirname + "/../frotz/dfrotz", ["-S 0", zFile]);
 
-    console.log("Game %s spawned for %s: %s", child.pid, label, zFile)
-    games[child.pid] = {
-        name: game,
-        zFile: zFile,
-        process: child,
-        label: label
-    };
-    readFromPid(child.pid, function(data) {
-        data = new String(data);
-        console.log(data);
-        data = data.substring(0, data.length - 3);
-        response = {
-            pid: child.pid,
-            data: data
+          console.log("Game %s spawned for %s: %s", child.pid, label, zFile)
+          games[child.pid] = {
+              name: game,
+              zFile: zFile,
+              process: child,
+              label: label
+          };
+          readFromPid(child.pid, function(data) {
+              data = new String(data);
+              console.log(data);
+              data = data.substring(0, data.length - 3);
+              response = {
+                  pid: child.pid,
+                  data: data
+              }
+              res.send(response);
+          });
+        } else {
+          res.status(400);
+          res.send({error: req.body.game + " isn't available on this server."});
         }
-        res.send(response);
     });
 });
 
