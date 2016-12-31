@@ -17,8 +17,9 @@ var port = process.env.PORT;
 if (process.env.AWS_REGION) {
     AWS.config.region = process.env.AWS_REGION;
     s3 = new AWS.S3({params: {Bucket: process.env.AWS_S3_BUCKET}});
+    console.log('Games will be saved to S3.');
 } else {
-    console.log('You can not save games until you set the AWS secrets');
+    console.log('Games will be saved to disk only.');
 }
 
 app.use(bodyParser.json()); // to support JSON-encoded bodies
@@ -96,15 +97,14 @@ app.post('/games/:pid/save', function(req, res) {
     var path = 'saves/' + filePrefix + file + '.sav';
 
     var saveToS3 = function(data) {
+        if (s3 === undefined) {
+            // Skip the S3 save if S3 isn't configured
+            return;
+        }
         // Send our save file to S3 in case the server dies
         data = new String(data);
         data = data.substring(0, data.length - 3);
-        console.log("Saving to s3: " + path);
-        if (s3 === undefined) {
-            res.send('Cannot save to S3: not configured');
-            console.log('Cannot save to S3: not configured');
-            return;
-        }
+        console.log("Pushing saved game to s3: " + path);
 
         var fs = require('fs');
         var body = fs.createReadStream(path);
@@ -197,7 +197,7 @@ app.post('/games/:pid/restore', function(req, res) {
 
     var getFromS3 = function() {
         if (s3 === undefined) {
-            res.send('Failed to find game on Disk\nCannot get from S3: not configured');
+            restoreFromDisk(failure);
             return;
         }
         // Grab from S3

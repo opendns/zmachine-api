@@ -38,9 +38,10 @@ find it. All node dependencies will be installed as well.
 
 Configuration
 -------------
-Right now we support writing save files to Amazon S3. This is configured by a
+We support writing save files to Amazon S3. This is configured by a
 .env file. You can copy the existing .env.example and customize it with your own
-AWS credentials to use S3 saves.
+AWS credentials to use S3 saves. If S3 is not configured, games will be saved
+to disk only.
 
 Bringing up a server
 --------------------
@@ -53,6 +54,10 @@ There is a Dockerfile here
 You can also skip most of this and use the provided Dockerfile, if it suits you.
 It'll take care of the dependencies and build process and give you just a
 container listening for HTTP requests.
+
+If you're using Docker, and you don't have S3 configured, take steps to ensure
+that `/root/saves` is preserved (use a Volume, mount a network drive, etc) or your
+saved games will be lost when the container is redeployed.
 
 The API
 -------
