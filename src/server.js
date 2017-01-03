@@ -150,6 +150,7 @@ app.post('/games/:pid/save', function(req, res) {
                 }
             }
         });
+        res.send(response);
     });
 });
 
