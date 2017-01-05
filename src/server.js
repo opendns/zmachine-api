@@ -51,7 +51,9 @@ app.post('/games', function(req, res) {
     readFromPid(child.pid, function(data) {
         data = new String(data);
         console.log(data);
-        data = data.substring(0, data.length - 3);
+        // zmachine responds with "\n>" at the end of each command.
+        // so strip off those 2 extra chars
+        data = data.substring(0, data.length - 2);
         response = {
             pid: child.pid,
             data: data
@@ -93,7 +95,9 @@ app.post('/games/:pid/action', function(req, res) {
     writeToPid(pid, req.body.action);
     readFromPid(pid, function(data) {
         data = new String(data);
-        data = data.substring(0, data.length - 3);
+        // zmachine responds with "\n>" at the end of each command.
+        // so strip off those 2 extra chars
+        data = data.substring(0, data.length - 2);
         response = {
             pid: pid,
             data: data
@@ -206,7 +210,7 @@ app.post('/games/:pid/restore', function(req, res) {
                     data = data.substring(0, data.length - 0);
                     failure(data)
                 } else {
-                    data = data.substring(0, data.length - 3);
+                    data = data.substring(0, data.length - 2);
                     response = {
                         pid: pid,
                         data: data
