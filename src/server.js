@@ -21,6 +21,8 @@ if (process.env.AWS_REGION) {
     console.log('You can not save games until you set the AWS secrets');
 }
 
+var allowedFiles = new RegExp("\.z5$", "i");
+
 app.use(bodyParser.json()); // to support JSON-encoded bodies
 app.use(bodyParser.urlencoded({ // to support URL-encoded bodies
     extended: true
@@ -28,6 +30,23 @@ app.use(bodyParser.urlencoded({ // to support URL-encoded bodies
 
 app.get('/', function(req, res) {
     res.redirect('/games');
+});
+
+app.get('/titles', function(req, res) {
+  output = [];
+  const fs = require('fs');
+  fs.readdir(__dirname + '/../zcode/', (err, files) => {
+    files.forEach(file => {
+      if (!fs.statSync(__dirname + '/../zcode/' + file).isDirectory()){
+        if (file.match(allowedFiles)) {
+          output.push({
+              zFile: file
+          });
+        }
+      }
+    });
+    res.send(output);
+  });
 });
 
 app.post('/games', function(req, res) {
