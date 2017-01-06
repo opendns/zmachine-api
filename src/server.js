@@ -35,31 +35,38 @@ app.post('/games', function(req, res) {
     var label = req.body.label;
     var game = req.body.game.replace(/[^a-z0-9]/, '');
     var zFile = __dirname + '/../zcode/' + game + '.z5';
-    var child = spawn(__dirname + "/../frotz/dfrotz", ["-S 0", zFile]);
-    child.on('error', function(err) {
-      console.log('Error spawning game: ' + err);
-      res.status(500).send({error: 'Could not create the game.'});
-      return;
-    });
+    var fs = require('fs');
+    fs.stat(zFile, function(err, stat) {
+      if(err != null) {
+        res.status(400);
+        res.send({error: req.body.game + " isn't available on this server."});
+        return;
+      }
 
-    console.log("Game %s spawned for %s: %s", child.pid, label, zFile)
-    games[child.pid] = {
-        name: game,
-        zFile: zFile,
-        process: child,
-        label: label
-    };
-    readFromPid(child.pid, function(data) {
-        data = new String(data);
-        console.log(data);
-        // zmachine responds with "\n>" at the end of each command.
-        // so strip off those 2 extra chars
-        data = data.substring(0, data.length - 2);
-        response = {
-            pid: child.pid,
-            data: data
-        }
-        res.send(response);
+      var child = spawn(__dirname + "/../frotz/dfrotz", ["-S 0", zFile]);
+      child.on('error', function(err) {
+        console.log('Error spawning game: ' + err);
+        res.status(500).send({error: 'Could not create the game.'});
+        return;
+      });
+
+      console.log("Game %s spawned for %s: %s", child.pid, label, zFile)
+      games[child.pid] = {
+          name: game,
+          zFile: zFile,
+          process: child,
+          label: label
+      };
+      readFromPid(child.pid, function(data) {
+          data = new String(data);
+          console.log(data);
+          data = data.substring(0, data.length - 3);
+          response = {
+              pid: child.pid,
+              data: data
+          }
+          res.send(response);
+      });
     });
 });
 
@@ -80,18 +87,18 @@ app.delete('/games/:pid', function(req, res) {
     var pid = req.params.pid;
     if (undefined === games[pid]) {
       res.status(404).send({error: 'Game ' + pid + ' not found.'});
-    } else {
-      games[pid].process.kill();
-      delete games[pid];
-      res.send("Game for " + pid + " terminated.");
+      return;
     }
+    games[pid].process.kill();
+    delete games[pid];
+    res.send("Game for " + pid + " terminated.");
 });
 
 app.post('/games/:pid/action', function(req, res) {
     var pid = req.params.pid;
     if (undefined === games[pid]) {
       res.status(404).send({error: 'Game ' + pid + ' not found.'});
-      return
+      return;
     }
     writeToPid(pid, req.body.action);
     readFromPid(pid, function(data) {
@@ -111,11 +118,11 @@ app.post('/games/:pid/save', function(req, res) {
     var pid = req.params.pid;
     if (undefined === games[pid]) {
       res.status(404).send({error: 'Game ' + pid + ' not found.'});
-      return
+      return;
     }
     if (undefined === req.body.file) {
       res.status(400).send({error: 'File not specified.'});
-      return
+      return;
     }
     var file = req.body.file;
     var filePrefix = games[pid].label + '-' + games[pid].name + '-';
@@ -184,11 +191,11 @@ app.post('/games/:pid/restore', function(req, res) {
     var pid = req.params.pid;
     if (undefined === games[pid]) {
       res.status(404).send({error: 'Game ' + pid + ' not found.'});
-      return
+      return;
     }
     if (undefined === req.body.file) {
       res.status(400).send({error: 'File not specified.'});
-      return
+      return;
     }
     var file = req.body.file;
     var filePrefix = games[pid].label + '-' + games[pid].name + '-';
@@ -229,7 +236,8 @@ app.post('/games/:pid/restore', function(req, res) {
             pid: pid,
             data: 'Failed to find save game' + data
         }
-        res.status(404).send(response)
+        res.status(404).send(response);
+        return;
     };
 
     var getFromS3 = function() {
