@@ -63,6 +63,28 @@ The API
 -------
 Here's how the API works.
 
+#### GET /titles
+Returns a list of all installed zcode games. These are what you can use with
+`POST /games`
+
+Response:
+```json
+[
+  {
+
+      "name": "ZORK1",
+      "zFile": "ZORK1.z5"
+
+  },
+  {
+
+      "name": "ZORK2",
+      "zFile": "ZORK2.z5"
+
+  }
+]
+```
+
 #### GET /games
 Returns a list of all active games.
 

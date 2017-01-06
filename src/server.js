@@ -31,6 +31,22 @@ app.get('/', function(req, res) {
     res.redirect('/games');
 });
 
+app.get('/titles', function(req, res) {
+  output = [];
+  const fs = require('fs');
+  fs.readdir(__dirname + '/../zcode/', (err, files) => {
+    files.forEach(file => {
+      if (!fs.statSync(__dirname + '/../zcode/' + file).isDirectory()){
+        output.push({
+            game: file.replace(".z5", ""),
+            zFile: file
+        });
+      }
+    });
+    res.send(output);
+  });
+});
+
 app.post('/games', function(req, res) {
     var label = req.body.label;
     var game = req.body.game.replace(/[^a-z0-9]/, '');
