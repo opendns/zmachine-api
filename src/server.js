@@ -63,6 +63,7 @@ app.post('/games', function(req, res) {
     fs.stat(zFile, function(err, stat) {
       if(err != null) {
         res.status(400);
+        logger.warn('Game %s.z5 not installed on this server', req.body.game);
         res.send({error: req.body.game + " isn't available on this server."});
         return;
       }
@@ -110,6 +111,7 @@ app.get('/games', function(req, res) {
 app.delete('/games/:pid', function(req, res) {
     var pid = req.params.pid;
     if (undefined === games[pid]) {
+      logger.error('Game instance not found', pid);
       res.status(404).send({error: 'Game ' + pid + ' not found.'});
       return;
     }
@@ -121,6 +123,7 @@ app.delete('/games/:pid', function(req, res) {
 app.post('/games/:pid/action', function(req, res) {
     var pid = req.params.pid;
     if (undefined === games[pid]) {
+      logger.error('Game instance not found', pid);
       res.status(404).send({error: 'Game ' + pid + ' not found.'});
       return;
     }
@@ -141,10 +144,12 @@ app.post('/games/:pid/action', function(req, res) {
 app.post('/games/:pid/save', function(req, res) {
     var pid = req.params.pid;
     if (undefined === games[pid]) {
+      logger.error('Game instance not found', pid);
       res.status(404).send({error: 'Game ' + pid + ' not found.'});
       return;
     }
     if (undefined === req.body.file) {
+      logger.error('Tried saving game without a filename', pid);
       res.status(400).send({error: 'File not specified.'});
       return;
     }
