@@ -2,6 +2,7 @@ var express = require('express');
 var bodyParser = require('body-parser');
 var env = require('node-env-file');
 var spawn = require('child_process').spawn;
+var logger = require('winston');
 
 var app = express();
 
@@ -12,14 +13,18 @@ env(__dirname + '/../.env', {raise: false});
 
 var port = process.env.PORT;
 
+logger.level = process.env.LOG_LEVEL || 'warn';
+logger.log('debug', 'Logging at', process.env.LOG_LEVEL);
+
+
 // Need to define AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY, AWS_S3_BUCKET env variables
 if (process.env.AWS_REGION) {
     var AWS = require('aws-sdk');
     AWS.config.region = process.env.AWS_REGION;
     s3 = new AWS.S3({params: {Bucket: process.env.AWS_S3_BUCKET}});
-    console.log('Games will be saved to S3.');
+    logger.info('Games will be saved to S3.');
 } else {
-    console.log('Games will be saved to disk only.');
+    logger.info('Games will be saved to disk only.');
 }
 
 var allowedFiles = new RegExp("\.z5$", "i");
@@ -58,18 +63,19 @@ app.post('/games', function(req, res) {
     fs.stat(zFile, function(err, stat) {
       if(err != null) {
         res.status(400);
+        logger.warn('Game %s.z5 not installed on this server', req.body.game);
         res.send({error: req.body.game + " isn't available on this server."});
         return;
       }
 
       var child = spawn(__dirname + "/../frotz/dfrotz", ["-S 0", zFile]);
       child.on('error', function(err) {
-        console.log('Error spawning game: ' + err);
+        logger.error('Error spawning game', err);
         res.status(500).send({error: 'Could not create the game.'});
         return;
       });
 
-      console.log("Game %s spawned for %s: %s", child.pid, label, zFile)
+      logger.debug("Game %s spawned for %s: %s", child.pid, label, zFile)
       games[child.pid] = {
           name: game,
           zFile: zFile,
@@ -78,7 +84,7 @@ app.post('/games', function(req, res) {
       };
       readFromPid(child.pid, function(data) {
           data = new String(data);
-          console.log(data);
+          logger.debug('Frotz says', data);
           data = data.substring(0, data.length - 3);
           response = {
               pid: child.pid,
@@ -105,6 +111,7 @@ app.get('/games', function(req, res) {
 app.delete('/games/:pid', function(req, res) {
     var pid = req.params.pid;
     if (undefined === games[pid]) {
+      logger.error('Game instance not found', pid);
       res.status(404).send({error: 'Game ' + pid + ' not found.'});
       return;
     }
@@ -116,6 +123,7 @@ app.delete('/games/:pid', function(req, res) {
 app.post('/games/:pid/action', function(req, res) {
     var pid = req.params.pid;
     if (undefined === games[pid]) {
+      logger.error('Game instance not found', pid);
       res.status(404).send({error: 'Game ' + pid + ' not found.'});
       return;
     }
@@ -136,10 +144,12 @@ app.post('/games/:pid/action', function(req, res) {
 app.post('/games/:pid/save', function(req, res) {
     var pid = req.params.pid;
     if (undefined === games[pid]) {
+      logger.error('Game instance not found', pid);
       res.status(404).send({error: 'Game ' + pid + ' not found.'});
       return;
     }
     if (undefined === req.body.file) {
+      logger.error('Tried saving game without a filename', pid);
       res.status(400).send({error: 'File not specified.'});
       return;
     }
@@ -155,7 +165,7 @@ app.post('/games/:pid/save', function(req, res) {
         // Send our save file to S3 in case the server dies
         data = new String(data);
         data = data.substring(0, data.length - 3);
-        console.log("Pushing saved game to s3: " + path);
+        logger.debug("Pushing saved game to s3", path);
 
         var fs = require('fs');
         var body = fs.createReadStream(path);
@@ -163,11 +173,11 @@ app.post('/games/:pid/save', function(req, res) {
         s3.upload({Key: key, Body: body}).
         send(function(err, updata) {
             if (err) {
-                console.log("S3 Error: %j", err);
+                logger.error("S3 Error: %j", err);
                 data = " (not saved to cloud) " + err;
                 res.status(503);
             } else {
-                console.log("S3 success: %j", updata);
+                logger.debug("S3 success: %j", updata);
                 data = data + " (saved to cloud)";
             }
             response = {
@@ -178,7 +188,7 @@ app.post('/games/:pid/save', function(req, res) {
         });
     };
 
-    console.log('Saving game ' + pid + ' to ' + path);
+    logger.debug('Saving game %d to %s', pid, path);
     writeToPid(pid, 'save');
     readFromPid(pid, function(data) {
         data = new String(data);
@@ -188,7 +198,7 @@ app.post('/games/:pid/save', function(req, res) {
             data: data
         }
 
-        console.log("Save response: %j", response);
+        logger.debug("Save response: %j", response);
         writeToPid(pid, path);
         readFromPid(pid, function(data) {
             data = new String(data);
@@ -209,10 +219,12 @@ app.post('/games/:pid/save', function(req, res) {
 app.post('/games/:pid/restore', function(req, res) {
     var pid = req.params.pid;
     if (undefined === games[pid]) {
+      logger.warn("Game not found", pid);
       res.status(404).send({error: 'Game ' + pid + ' not found.'});
       return;
     }
     if (undefined === req.body.file) {
+      logger.warn("Save file not specified restoring %d", pid);
       res.status(400).send({error: 'File not specified.'});
       return;
     }
@@ -222,7 +234,7 @@ app.post('/games/:pid/restore', function(req, res) {
 
     // See if game exists on disk
     var restoreFromDisk = function(failure) {
-        console.log('Restoring game ' + pid);
+        logger.debug('Restoring game ' + pid);
         writeToPid(pid, 'restore');
         readFromPid(pid, function(data) {
             data = new String(data);
@@ -231,7 +243,7 @@ app.post('/games/:pid/restore', function(req, res) {
                 pid: pid,
                 data: data
             }
-            console.log("Restore response: %j", response);
+            logger.debug("Restore response: %j", response);
             writeToPid(pid, path);
             readFromPid(pid, function(data) {
                 data = new String(data);
@@ -255,6 +267,7 @@ app.post('/games/:pid/restore', function(req, res) {
             pid: pid,
             data: 'Failed to find save game' + data
         }
+        logger.warn('Failed to find saved game', pid, data);
         res.status(404).send(response);
         return;
     };
@@ -265,15 +278,15 @@ app.post('/games/:pid/restore', function(req, res) {
             return;
         }
         // Grab from S3
-        console.log('Downloading game ' + pid);
+        logger.debug('Downloading game from S3', pid);
         var params = {Key: 'zmachine/' + path};
         var s3Msg;
         s3.getObject(params, function(err, data) {
             if (err) {
-                console.log("S3 Download error: %j", err);
+                logger.error("S3 Download error: %j", err);
                 failure();
             } else {
-                console.log("S3 Download success: %s", data.ContentLength);
+                logger.debug("S3 Download success: %s", data.ContentLength);
                 var fs = require('fs');
                 var fileW = fs.createWriteStream(path);
                 fileW.write(data.Body);
@@ -295,15 +308,13 @@ var server = app.listen(port, function() {
     var host = server.address().address;
     var port = server.address().port;
 
-    console.log('All listening on %s:%s', host, port);
+    logger.info('All listening on %s:%s', host, port);
 }).on('error', function(err){
-    console.log('on error handler');
-    console.log(err);
+    logger.error('Server error', err);
 });
 
 process.on('uncaughtException', function(err) {
-    console.log('process.on handler');
-    console.log(err);
+    logger.error('process.on uncaughtException', err);
 });
 
 var writeToPid = function(pid, data) {
