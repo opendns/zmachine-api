@@ -16,6 +16,8 @@ var port = process.env.PORT;
 logger.level = process.env.LOG_LEVEL || 'warn';
 logger.log('debug', 'Logging at', process.env.LOG_LEVEL);
 
+// Add a prototype to allow regex search
+
 
 // Need to define AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY, AWS_S3_BUCKET env variables
 if (process.env.AWS_REGION) {
@@ -27,7 +29,7 @@ if (process.env.AWS_REGION) {
     logger.info('Games will be saved to disk only.');
 }
 
-var allowedFiles = new RegExp("\.z5$", "i");
+var allowedFiles = new RegExp("\.z[3-8]$", "i");
 
 app.use(bodyParser.json()); // to support JSON-encoded bodies
 app.use(bodyParser.urlencoded({ // to support URL-encoded bodies
@@ -56,14 +58,31 @@ app.get('/titles', function(req, res) {
 });
 
 app.post('/games', function(req, res) {
-    var label = req.body.label;
-    var game = req.body.game.replace(/[^a-z0-9]/, '');
-    var zFile = __dirname + '/../zcode/' + game + '.z5';
-    var fs = require('fs');
+  files = [];
+
+  var label = req.body.label;
+  var game = req.body.game.replace(/[^a-z0-9]/, '');
+  var fs = require('fs');
+  var re = new RegExp(game, 'i');
+  var zFile = ''
+  fs.readdir(__dirname + '/../zcode/', (err, files) => {
+    files.forEach(file => {
+      if (!fs.statSync(__dirname + '/../zcode/' + file).isDirectory()){
+        if (file.match(allowedFiles)) {
+          logger.debug("file: %s", file);
+          if (file.match(re)) {
+            zFile = __dirname + '/../zcode/' + file;
+          }
+        }
+      }
+    });
+
+    //var zFile = __dirname + '/../zcode/' + game + '.z5';
+    logger.debug("zFile: %s", zFile);
     fs.stat(zFile, function(err, stat) {
       if(err != null) {
         res.status(400);
-        logger.warn('Game %s.z5 not installed on this server', req.body.game);
+        logger.warn('Game %s not installed on this server', zFile);
         res.send({error: req.body.game + " isn't available on this server."});
         return;
       }
@@ -93,6 +112,7 @@ app.post('/games', function(req, res) {
           res.send(response);
       });
     });
+  });
 });
 
 app.get('/games', function(req, res) {
