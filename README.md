@@ -8,9 +8,9 @@ You are standing in a repository. There is a README here.
 Overview
 --------
 This project aims to provide a simple web service that can bring up and run
-games in a z-machine. It was originally written to be interacted with by a [hubot
-script](https://github.com/opendns/hubot-zmachine), but could presumably be used by anything you like, which is the fun of
-APIs.
+games in a z-machine. It was originally written to be interacted with by a
+[hubotscript](https://github.com/opendns/hubot-zmachine), but could presumably
+be used by anything you like, which is the fun of APIs.
 
 The API uses the [dfrotz z-machine interpreter](https://github.com/DavidGriffith/frotz).
 Each game you start is run in a different dfrotz process, and APIs for managing
@@ -33,21 +33,36 @@ Really just the dependencies need to be built. It should just be a matter of:
 make all
 ```
 
-Frotz 2.44 will be downloaded and built, and a symlink created so zmachine-api can
-find it. All node dependencies will be installed as well.
+Frotz 2.44 will be downloaded and built, and a symlink created so zmachine-api
+can find it. All node dependencies will be installed as well.
 
 Configuration
 -------------
-We support writing save files to Amazon S3. This is configured by a
-.env file. You can copy the existing .env.example and customize it with your own
-AWS credentials to use S3 saves. If S3 is not configured, games will be saved
-to disk only.
+You can copy the existing .env.example and customize it to set the port and
+LOG_LEVEL options.
+
+We support writing save files to Amazon S3. This is configured in the
+.env file with your own AWS credentials to use S3 saves. If S3 is not
+ configured, games will be saved to disk only.
 
 Bringing up a server
 --------------------
 ```bash
 node src/server.js
 ```
+
+What about the games?
+---------------------
+Create a zcode directory to store your games. We currently only suport z3 - z8
+format games.
+
+We don't provide you with any games, but feel free to drop any zcode files you
+come across in the zcode directory. There are lots of good public domain games
+out there, why not try a bunch?
+
+There is a great selection of zcodes games here as well as many other places.
+[if-archive/games/zcode](https://ifarchive.org/indexes/if-archiveXgamesXzcode.html)
+
 
 There is a Dockerfile here
 --------------------------
@@ -324,9 +339,3 @@ Bugs?
 Yes, probably.
 
 By all means, open an issue on GitHub. Or, better yet, submit a pull request!
-
-What about the games?
----------------------
-We don't provide you with any games, but feel free to drop any zcode files you
-come across in the zcode directory. There are lots of good public domain games
-out there, why not try a bunch?
