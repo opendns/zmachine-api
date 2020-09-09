@@ -1,4 +1,6 @@
 .env
 frotz
 node_modules
-zcode/*
+package-lock.json
+saves
+zcode
