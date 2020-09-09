@@ -53,7 +53,7 @@ Bringing up a server
 --------------------
 
 ```bash
-node src/server.js
+npm start
 ```
 
 What about the games?

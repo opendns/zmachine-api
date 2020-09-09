@@ -56,5 +56,11 @@
     "node-env-file": "~0.1",
     "winston": "^2.3.1"
   },
-  "devDependencies": {}
+  "devDependencies": {
+    "nodemon": "^2.0.4"
+  },
+  "scripts": {
+    "start": "node src/server.js",
+    "debug": "nodemon src/server.js"
+  }
 }
