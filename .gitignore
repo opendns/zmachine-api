@@ -1,4 +1,6 @@
 .env
-frotz
-node_modules
+frotz/*
+node_modules/*
+package-lock.json
+saves/*.sav
 zcode/*
