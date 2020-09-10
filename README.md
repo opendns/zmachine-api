@@ -21,10 +21,11 @@ better than it is. Please feel free to contribute improvements!
 
 Dependencies
 ------------
-- nodejs
-- npm
-- wget
-- dfrotz (the makefile will install this for you)
+
+- `nodejs`
+- `npm`
+- `wget`
+- `dfrotz` (the makefile will download this from [its GitLab repository](https://gitlab.com/DavidGriffith/frotz/-/releases) and install it for you)
 
 Building
 --------
