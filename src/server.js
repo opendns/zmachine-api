@@ -14,7 +14,7 @@ env(__dirname + '/../.env', {raise: false});
 var port = process.env.PORT;
 
 logger.level = process.env.LOG_LEVEL || 'warn';
-logger.log('debug', 'Logging at', process.env.LOG_LEVEL);
+logger.debug('Logging at', logger.level);
 
 // Add a prototype to allow regex search
 
@@ -37,85 +37,92 @@ app.use(bodyParser.urlencoded({ // to support URL-encoded bodies
 }));
 
 app.get('/', function(req, res) {
+    logger.debug('Received GET /');
+
     res.redirect('/games');
 });
 
 app.get('/titles', function(req, res) {
-  output = [];
-  const fs = require('fs');
-  fs.readdir(__dirname + '/../zcode/', (err, files) => {
-    files.forEach(file => {
-      if (!fs.statSync(__dirname + '/../zcode/' + file).isDirectory()){
-        if (file.match(allowedFiles)) {
-          output.push({
-              zFile: file
-          });
-        }
-      }
+    logger.debug('Received GET /titles');
+    
+    output = [];
+    const fs = require('fs');
+    fs.readdir(__dirname + '/../zcode/', (err, files) => {
+        files.forEach(file => {
+            if (!fs.statSync(__dirname + '/../zcode/' + file).isDirectory()){
+                if (file.match(allowedFiles)) {
+                    output.push({
+                        zFile: file
+                    });
+                }
+            }
+        });
+        res.send(output);
     });
-    res.send(output);
-  });
 });
 
 app.post('/games', function(req, res) {
-  files = [];
-
-  var label = req.body.label;
-  var game = req.body.game.replace(/[^a-z0-9]/, '');
-  var fs = require('fs');
-  var re = new RegExp(game, 'i');
-  var zFile = ''
-  fs.readdir(__dirname + '/../zcode/', (err, files) => {
-    files.forEach(file => {
-      if (!fs.statSync(__dirname + '/../zcode/' + file).isDirectory()){
-        if (file.match(allowedFiles)) {
-          logger.debug("file: %s", file);
-          if (file.match(re)) {
-            zFile = __dirname + '/../zcode/' + file;
-          }
-        }
-      }
+    logger.debug('Received POST /games with req.body', req.body);
+    
+    files = [];
+    var label = req.body.label;
+    var game = req.body.game.replace(/[^a-z0-9]/, '');
+    var fs = require('fs');
+    var re = new RegExp(game, 'i');
+    var zFile = ''
+    fs.readdir(__dirname + '/../zcode/', (err, files) => {
+        files.forEach(file => {
+            if (!fs.statSync(__dirname + '/../zcode/' + file).isDirectory()){
+                if (file.match(allowedFiles)) {
+                    logger.debug("file: %s", file);
+                    if (file.match(re)) {
+                        zFile = __dirname + '/../zcode/' + file;
+                    }
+                }
+            }
+        });
+        
+        //var zFile = __dirname + '/../zcode/' + game + '.z5';
+        logger.debug("zFile: %s", zFile);
+        fs.stat(zFile, function(err, stat) {
+            if(err != null) {
+                res.status(400);
+                logger.warn('Game %s not installed on this server', zFile);
+                res.send({error: req.body.game + " isn't available on this server."});
+                return;
+            }
+            
+            var child = spawn(__dirname + "/../frotz/dfrotz", ["-S 0", zFile]);
+            child.on('error', function(err) {
+                logger.error('Error spawning game', err);
+                res.status(500).send({error: 'Could not create the game.'});
+                return;
+            });
+            
+            logger.debug("Game %s spawned for %s: %s", child.pid, label, zFile)
+            games[child.pid] = {
+                name: game,
+                zFile: zFile,
+                process: child,
+                label: label
+            };
+            readFromPid(child.pid, function(data) {
+                data = new String(data);
+                logger.debug('Frotz says', data);
+                data = data.substring(0, data.length - 3);
+                response = {
+                    pid: child.pid,
+                    data: data
+                }
+                res.send(response);
+            });
+        });
     });
-
-    //var zFile = __dirname + '/../zcode/' + game + '.z5';
-    logger.debug("zFile: %s", zFile);
-    fs.stat(zFile, function(err, stat) {
-      if(err != null) {
-        res.status(400);
-        logger.warn('Game %s not installed on this server', zFile);
-        res.send({error: req.body.game + " isn't available on this server."});
-        return;
-      }
-
-      var child = spawn(__dirname + "/../frotz/dfrotz", ["-S 0", zFile]);
-      child.on('error', function(err) {
-        logger.error('Error spawning game', err);
-        res.status(500).send({error: 'Could not create the game.'});
-        return;
-      });
-
-      logger.debug("Game %s spawned for %s: %s", child.pid, label, zFile)
-      games[child.pid] = {
-          name: game,
-          zFile: zFile,
-          process: child,
-          label: label
-      };
-      readFromPid(child.pid, function(data) {
-          data = new String(data);
-          logger.debug('Frotz says', data);
-          data = data.substring(0, data.length - 3);
-          response = {
-              pid: child.pid,
-              data: data
-          }
-          res.send(response);
-      });
-    });
-  });
 });
 
 app.get('/games', function(req, res) {
+    logger.debug('Received GET /games');
+
     output = [];
     games.forEach(function (game) {
         output.push({
@@ -129,11 +136,13 @@ app.get('/games', function(req, res) {
 });
 
 app.delete('/games/:pid', function(req, res) {
+    logger.debug('Received DELETE /games/:pid with req.params', req.params);
+
     var pid = req.params.pid;
     if (undefined === games[pid]) {
-      logger.error('Game instance not found', pid);
-      res.status(404).send({error: 'Game ' + pid + ' not found.'});
-      return;
+        logger.error('Game instance not found', pid);
+        res.status(404).send({error: 'Game ' + pid + ' not found.'});
+        return;
     }
     games[pid].process.kill();
     delete games[pid];
@@ -141,11 +150,14 @@ app.delete('/games/:pid', function(req, res) {
 });
 
 app.post('/games/:pid/action', function(req, res) {
+    logger.debug('Received POST /games/:pid/action with req.params', req.params,
+        'and req.body', req.body);
+
     var pid = req.params.pid;
     if (undefined === games[pid]) {
-      logger.error('Game instance not found', pid);
-      res.status(404).send({error: 'Game ' + pid + ' not found.'});
-      return;
+        logger.error('Game instance not found', pid);
+        res.status(404).send({error: 'Game ' + pid + ' not found.'});
+        return;
     }
     writeToPid(pid, req.body.action);
     readFromPid(pid, function(data) {
@@ -162,21 +174,24 @@ app.post('/games/:pid/action', function(req, res) {
 });
 
 app.post('/games/:pid/save', function(req, res) {
+    logger.debug('Received POST /games/:pid/save with req.params', req.params,
+        'and req.body', req.body);
+
     var pid = req.params.pid;
     if (undefined === games[pid]) {
-      logger.error('Game instance not found', pid);
-      res.status(404).send({error: 'Game ' + pid + ' not found.'});
-      return;
+        logger.error('Game instance not found', pid);
+        res.status(404).send({error: 'Game ' + pid + ' not found.'});
+        return;
     }
     if (undefined === req.body.file) {
-      logger.error('Tried saving game without a filename', pid);
-      res.status(400).send({error: 'File not specified.'});
-      return;
+        logger.error('Tried saving game without a filename', pid);
+        res.status(400).send({error: 'File not specified.'});
+        return;
     }
     var file = req.body.file;
     var filePrefix = games[pid].label + '-' + games[pid].name + '-';
     var path = 'saves/' + filePrefix + file + '.sav';
-
+    
     var saveToS3 = function(data) {
         if (s3 === undefined) {
             // Skip the S3 save if S3 isn't configured
@@ -186,7 +201,7 @@ app.post('/games/:pid/save', function(req, res) {
         data = new String(data);
         data = data.substring(0, data.length - 3);
         logger.debug("Pushing saved game to s3", path);
-
+        
         var fs = require('fs');
         var body = fs.createReadStream(path);
         var key = 'zmachine/' + path;
@@ -207,7 +222,7 @@ app.post('/games/:pid/save', function(req, res) {
             res.send(response);
         });
     };
-
+    
     logger.debug('Saving game %d to %s', pid, path);
     writeToPid(pid, 'save');
     readFromPid(pid, function(data) {
@@ -217,7 +232,7 @@ app.post('/games/:pid/save', function(req, res) {
             pid: pid,
             data: data
         }
-
+        
         logger.debug("Save response: %j", response);
         writeToPid(pid, path);
         readFromPid(pid, function(data) {
@@ -228,7 +243,7 @@ app.post('/games/:pid/save', function(req, res) {
             }
             else {
                 if (s3 !== undefined) {
-                  saveToS3(data);
+                    saveToS3(data);
                 }
             }
         });
@@ -237,21 +252,24 @@ app.post('/games/:pid/save', function(req, res) {
 });
 
 app.post('/games/:pid/restore', function(req, res) {
+    logger.debug('Received POST /games/:pid/restore with req.params', req.params,
+        'and req.body', req.body);
+
     var pid = req.params.pid;
     if (undefined === games[pid]) {
-      logger.warn("Game not found", pid);
-      res.status(404).send({error: 'Game ' + pid + ' not found.'});
-      return;
+        logger.warn("Game not found", pid);
+        res.status(404).send({error: 'Game ' + pid + ' not found.'});
+        return;
     }
     if (undefined === req.body.file) {
-      logger.warn("Save file not specified restoring %d", pid);
-      res.status(400).send({error: 'File not specified.'});
-      return;
+        logger.warn("Save file not specified restoring %d", pid);
+        res.status(400).send({error: 'File not specified.'});
+        return;
     }
     var file = req.body.file;
     var filePrefix = games[pid].label + '-' + games[pid].name + '-';
     var path = 'saves/' + filePrefix + file + '.sav';
-
+    
     // See if game exists on disk
     var restoreFromDisk = function(failure) {
         logger.debug('Restoring game ' + pid);
@@ -281,7 +299,7 @@ app.post('/games/:pid/restore', function(req, res) {
             });
         });
     };
-
+    
     var failure = function(data) {
         response = {
             pid: pid,
@@ -291,7 +309,7 @@ app.post('/games/:pid/restore', function(req, res) {
         res.status(404).send(response);
         return;
     };
-
+    
     var getFromS3 = function() {
         if (s3 === undefined) {
             res.status(404).send('Failed to find game on Disk\nCannot get from S3: not configured');
@@ -310,13 +328,13 @@ app.post('/games/:pid/restore', function(req, res) {
                 var fs = require('fs');
                 var fileW = fs.createWriteStream(path);
                 fileW.write(data.Body);
-
+                
                 // Now that it's moved from S3 to disk, load the game
                 restoreFromDisk(failure);
             }
         });
     };
-
+    
     if (s3 === undefined) {
         restoreFromDisk(failure);
     } else {
@@ -327,7 +345,7 @@ app.post('/games/:pid/restore', function(req, res) {
 var server = app.listen(port, function() {
     var host = server.address().address;
     var port = server.address().port;
-
+    
     logger.info('All listening on %s:%s', host, port);
 }).on('error', function(err){
     logger.error('Server error', err);
